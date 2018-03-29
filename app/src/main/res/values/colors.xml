@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#ff4081</color>
+    <color name="alf_red">#dc134c</color>
+    <color name="alf_blue">#1e90ff</color>
+    <color name="alf_green">#3cb371</color>
+    <color name="alf_darkred">#b70f3e</color>
+    <color name="alf_darkblue">#166cc0</color>
+    <color name="alf_darkgreen">#35a567</color>
 </resources>
