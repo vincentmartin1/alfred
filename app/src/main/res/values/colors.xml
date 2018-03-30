@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorAccent">#ff4081</color>
     <color name="alf_red">#dc134c</color>
     <color name="alf_blue">#1e90ff</color>
     <color name="alf_green">#3cb371</color>
