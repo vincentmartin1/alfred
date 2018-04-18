@@ -1,0 +1,82 @@
+// + : trigger operator
+// - : reply operator
+// % : previous operator
+
+// # in a trigger : matches numbers only
+// _ in a trigger : matches single-word only
+// * in a trigger : matches anything
+
+! version = 2.0
+
+// Begin block
+> begin
+    + request
+    - {ok}
+< begin
+
+// Substitutions
+// ! sub ... = ...
+
+// Variable definitions
+! var master = localuser
+! var botname = Alfred
+
++ envoie un message a *
+- <set dst=<star>>
+^ Que voulez-vous envoyer à <get dst> ?
+
++ *
+% Que voulez-vous envoyer à <get dst> ?
+- CMD;SEND;<get dst>;<star2>
+
+// Basic answer
++ *
+- REP;What do you mean?
+- REP;Try asking your question a different way.
+
+// Debug replies : set variable and get value
++ set _ *
+- REP;<set <star1>=<star2>>
+^ <star1> set to <star2>.
+
++ get *
+- REP;<star> is : <get <star>>
+
++ how are you
+- i am fine and you
+
++ i am fine too
+% i am fine and you
+- cool we are both fine
+
++ my _ is *
+- <set <star1>=<star2>>I will remember that your <star1> is <star2>.
+
++ what is my _
+* <get <star>> == undefined => I do not know your <star>.
+- REP;Your <star> is <get <star>>
+
+// Replies
++ hello bot
+- REP;Hello, human!
+
++ (my name is|i am) *
+- REP;<set name=<star2>>I will remember it, <get name>.
+- REP;<set name=<star2>>Nice to meet you, <get name> !
+
++ (who am i|what is my name)
+* <get name> == undefined => I do not know your name. What is your name ?
+- REP;You are <get name>.
+- REP;Your name is <get name>.
+
++ (what is your name|who are you)
+- REP;My name is <get botname>
+
++ open *
+- REP;I cannot find any application named "<star>" in your device.
+
++ open (facebook|chrome|sms)
+- CMD;OPEN;<formal>.
+
++ send * to *
+- CMD;TEXT;<star2>;<star1>
