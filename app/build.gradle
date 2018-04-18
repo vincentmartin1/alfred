@@ -18,7 +18,12 @@ android {
     }
 }
 
+repositories {
+    jcenter()
+}
+
 dependencies {
+    compile group: 'de.dfki.mary', name: 'voice-cmu-slt-hsmm', version: '5.2'
     compile "com.rivescript:rivescript-core:0.10.0"
     compile group: 'commons-io', name: 'commons-io', version: '2.4'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
