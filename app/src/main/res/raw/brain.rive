@@ -42,6 +42,7 @@
 + get *
 - REP;<star> is : <get <star>>
 
+// Tests
 + how are you
 - i am fine and you
 
@@ -80,3 +81,6 @@
 
 + send * to *
 - CMD;TEXT;<star2>;<star1>
+
++ calcule # _ #
+- CMD;MATH;<star1>;<star2>;<star3>
