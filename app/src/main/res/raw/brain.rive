@@ -73,14 +73,47 @@
 + (what is your name|who are you)
 - REP;My name is <get botname>
 
-+ open *
-- REP;I cannot find any application named "<star>" in your device.
+// ------ Réponses en français ------
 
-+ open (facebook|chrome|sms)
-- CMD;OPEN;<formal>.
+// Command:OPEN
+//   Ouvre une application
++ ouvre *
+- CMD;OPEN;<star>
 
-+ send * to *
+// Command:TEXT
+//   Envoie un SMS
++ envoie * à * par sms
 - CMD;TEXT;<star2>;<star1>
 
-+ calcule # _ #
-- CMD;MATH;<star1>;<star2>;<star3>
+// Command:MAIL
+//   Envoie un mail
++ envoie * à * par mail
+- CMD;MAIL;<star2>;<star1>
+
+// Command:CALL
+//   Appelle un contact
++ appelle *
+- CMD;CALL;<star>
+
+// Command:WEB
+//   Effectue une recherche sur le Web
++ google *
+- CMD;WEB;<star>
+
+// Command:DATE
+//   Renvoie la date actuelle
++ (quelle est la date|quel jour sommes nous)
+- CMD;DATE
+
+// Command:WEATHER
+//   Renvoie la météo à un certain endroit
++ (quelle temps fait il|quelle est la météo) à *
+- CMD;WEATHER;<star2>
+
+// Command:POSITION
+//   Renvoie la localisation
++ (où suis je|quelle est ma position|quelle est ma localisation)
+- CMD;POSITION
+
+// Command:EVENT
+//

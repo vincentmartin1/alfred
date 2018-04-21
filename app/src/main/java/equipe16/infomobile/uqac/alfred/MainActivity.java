@@ -1,12 +1,19 @@
 package equipe16.infomobile.uqac.alfred;
 
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.telecom.Call;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.rivescript.RiveScript;
 
@@ -16,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,23 +43,27 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Returns the prefix of an array (i.e. the first
      * element of the array).
-     * @param arr array to extract the prefix
+     * @param string string to extract the prefix
      * @return prefix of the array
      */
-    public String prefix(String[] arr) {
-        // Récupération du préfixe
-        String prefix = arr[0];
+    public String prefix(String string) {
+        // Conversion de la chaîne en liste
+        String[] arr = string.split(";");
 
-        return prefix;
+        // Récupération du préfixe
+        return arr[0];
     }
 
     /**
      * Returns the content of an array (i.e. the concatenation
      * of all its elements except the first one).
-     * @param arr array to extract the content
+     * @param string array to extract the content
      * @return content of the array
      */
-    public String content(String[] arr) {
+    public String content(String string) {
+        // Conversion de la chaîne en liste
+        String[] arr = string.split(";");
+
         // On retire le premier élément de la liste (le préfixe)
         List<String> list = new ArrayList<>(Arrays.asList(arr));
         list.remove(0);
@@ -62,12 +74,11 @@ public class MainActivity extends AppCompatActivity {
         for(String s:
                 arr) {
             sb.append(s);
+            sb.append(";");
         }
 
         // Récupération du contenu
-        String content = sb.substring(0, sb.length());
-
-        return content;
+        return sb.substring(0, sb.length() - 1);
     }
 
     /**
@@ -76,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i("ALF", "*** Application started ***");
+        log("*** Application started ***");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -107,6 +118,8 @@ public class MainActivity extends AppCompatActivity {
      * @param view Button
      */
     public void submit(View view) {
+        editText.onEditorAction(EditorInfo.IME_ACTION_DONE);
+
         String question = editText.getText().toString();
         String prefix;
         String content;
@@ -116,11 +129,8 @@ public class MainActivity extends AppCompatActivity {
             // Récupération de la réponse du bot
             String reply = bot.reply("user", question);
 
-            // Split de la réponse par des ';'
-            String[] arr = reply.split(";");
-
-            prefix = prefix(arr);
-            content = content(arr);
+            prefix = prefix(reply);
+            content = content(reply);
 
             // Test du type de la réponse et exécution
             if (prefix.equals("REP"))
@@ -143,50 +153,61 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Executes a command, i.e. if the prefix of the bot's
      * reply is "CMD".
-     * Runs dispatch() function.
      * @param content content of the bot's reply
      */
     public void executeCommand(String content) {
         log("TYPE: COMMAND");
         answer.setText("Executing command..");
 
-        String[] arr = content.split(";");
+        String command = prefix(content);
+        content = content(content);
 
-        String command = prefix(arr);
-        content = content(arr);
+        log("command = " + command);
+        log("content = " + content);
 
         switch(command) {
             case "OPEN":
+                log("OPEN");
                 cmdOpen(content);
                 break;
             case "TEXT":
+                log("TEXT");
                 cmdText(content);
                 break;
             case "MAIL":
+                log("MAIL");
                 cmdMail(content);
                 break;
             case "CALL":
+                log("CALL");
                 cmdCall(content);
                 break;
             case "WEB":
+                log("WEB");
                 cmdWeb(content);
                 break;
             case "DATE":
+                log("DATE");
                 cmdDate(content);
                 break;
             case "WEATHER":
+                log("WEATHER");
                 cmdWeather(content);
                 break;
             case "POSITION":
+                log("POSITION");
                 cmdPosition(content);
                 break;
             case "EVENT":
+                log("EVENT");
                 cmdEvent(content);
                 break;
             case "REMINDER":
+                log("REMINDER");
                 cmdReminder(content);
                 break;
             case "MATH":
+                log("MATH");
                 cmdMath(content);
                 break;
         }
@@ -198,6 +219,59 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdOpen(String content) {
+        content = content.toLowerCase();
+
+        HashMap<String, String> appList = new HashMap<>();
+
+        PackageManager pm = getPackageManager();
+        Intent main = new Intent(Intent.ACTION_MAIN, null);
+        main.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> packages = pm.queryIntentActivities(main, 0);
+
+        ArrayList<String> appNameList = new ArrayList<>();
+        ArrayList<String> packageNameList = new ArrayList<>();
+
+        for(ResolveInfo resolve_info : packages) {
+            try {
+                String packageName = resolve_info.activityInfo.packageName;
+                String appName = (String)pm.getApplicationLabel(
+                        pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA));
+                boolean same = false;
+                for(int i = 0 ; i < appNameList.size() ; i++) {
+                    if(packageName.equals(packageNameList.get(i)))
+                        same = true;
+                }
+                if(!same) {
+                    appList.put(appName.toLowerCase(), packageName);
+                }
+                log("<" + appName + ">");
+            } catch(Exception e) {
+                log("exception");
+            }
+        }
+
+        boolean found = false;
+        for(String appName:
+                appList.keySet()) {
+            if(content.equals(appName))
+                found = true;
+        }
+
+        if (found) {
+            String packageName = appList.get(content);
+            Intent mIntent = getPackageManager().getLaunchIntentForPackage(
+                    packageName);
+            if (mIntent != null) {
+                try {
+                    startActivity(mIntent);
+                } catch (ActivityNotFoundException err) {
+                    executeReply("App not found");
+                }
+            }
+        }
+        else
+            executeReply("App not found");
+
     }
 
     /**
@@ -214,6 +288,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdMail(String content) {
+        // Traitement : envoie un mail
     }
 
     /**
@@ -222,6 +297,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdCall(String content) {
+        // Traitement : passe un appel
     }
 
     /**
@@ -229,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdWeb(String content) {
+        // Traitement : fait une recherche web
     }
 
     /**
@@ -236,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdDate(String content) {
+        // Traitement : donne la date
     }
 
     /**
@@ -243,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdWeather(String content) {
+        // Traitement : donne la météo
     }
 
     /**
@@ -250,6 +329,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdPosition(String content) {
+        // Traitement : donne la localisation
     }
 
     /**
@@ -257,6 +337,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdEvent(String content) {
+        // Traitement : ajoute un évènement dans le calendrier
     }
 
     /**
@@ -264,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdReminder(String content) {
+        // Traitement : ajoute un rappel
     }
 
     /**
@@ -272,5 +354,6 @@ public class MainActivity extends AppCompatActivity {
      */
     private void cmdMath(String content) {
         String[] arr;
+        // Traitement : effectue une opération mathématique
     }
 }
