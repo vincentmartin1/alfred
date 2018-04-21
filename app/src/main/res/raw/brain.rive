@@ -97,6 +97,9 @@
 
 // Command:WEB
 //   Effectue une recherche sur le Web
++ cherche * sur google
+- CMD;WEB;<star>
+
 + google *
 - CMD;WEB;<star>
 
@@ -107,8 +110,11 @@
 
 // Command:WEATHER
 //   Renvoie la météo à un certain endroit
-+ (quelle temps fait il|quelle est la météo) à *
++ (quel temps fait il|quelle est la météo) à *
 - CMD;WEATHER;<star2>
+
++ quel temps fait il (ici)
+- CMD;WEATHER
 
 // Command:POSITION
 //   Renvoie la localisation
@@ -116,4 +122,16 @@
 - CMD;POSITION
 
 // Command:EVENT
-//
+//  Ajoute un évènement au calendrier
++ ajoute l'évènement * au calendrier à la date du *
+- CMD;EVENT;<star1>;<star2>
+
+// Command:REMINDER
+//   Ajoute un rappel
++ rappelle moi de *
+- CMD;REMINDER;<star>
+
+// Command:MATH
+//   Effectue un calcul
++ calcule # _ #
+- CMD;MATH;<star1>;<star2>;<star3>

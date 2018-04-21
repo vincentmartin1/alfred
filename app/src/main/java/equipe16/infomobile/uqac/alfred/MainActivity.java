@@ -1,9 +1,8 @@
 package equipe16.infomobile.uqac.alfred;
 
+import android.app.SearchManager;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.support.v7.app.AppCompatActivity;
@@ -13,7 +12,6 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.rivescript.RiveScript;
 
@@ -78,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Récupération du contenu
-        return sb.substring(0, sb.length() - 1);
+        return sb.substring(0, sb.length() - 1) + "";
     }
 
     /**
@@ -219,19 +217,26 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdOpen(String content) {
+        // Conversion of the content to lowercase
         content = content.toLowerCase();
 
+        // Creation of the app list hashmap
         HashMap<String, String> appList = new HashMap<>();
 
+        // Gets all the packages stored in the device
         PackageManager pm = getPackageManager();
         Intent main = new Intent(Intent.ACTION_MAIN, null);
         main.addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> packages = pm.queryIntentActivities(main, 0);
 
+        // Initialization of the lists
         ArrayList<String> appNameList = new ArrayList<>();
         ArrayList<String> packageNameList = new ArrayList<>();
 
-        for(ResolveInfo resolve_info : packages) {
+        // Stores the names in the hashmap
+        // under the form (k, v) = (app name, package name)
+        for(ResolveInfo resolve_info:
+                packages) {
             try {
                 String packageName = resolve_info.activityInfo.packageName;
                 String appName = (String)pm.getApplicationLabel(
@@ -244,12 +249,12 @@ public class MainActivity extends AppCompatActivity {
                 if(!same) {
                     appList.put(appName.toLowerCase(), packageName);
                 }
-                log("<" + appName + ">");
             } catch(Exception e) {
                 log("exception");
             }
         }
 
+        // Checks if the wanted application is in the hashmap's keys
         boolean found = false;
         for(String appName:
                 appList.keySet()) {
@@ -257,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 found = true;
         }
 
+        // If the app is known, opens it
         if (found) {
             String packageName = appList.get(content);
             Intent mIntent = getPackageManager().getLaunchIntentForPackage(
@@ -269,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+        // Else, tels the user
         else
             executeReply("App not found");
 
@@ -306,6 +313,10 @@ public class MainActivity extends AppCompatActivity {
      */
     private void cmdWeb(String content) {
         // Traitement : fait une recherche web
+        Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
+        String keyword = content;
+        intent.putExtra(SearchManager.QUERY, keyword);
+        startActivity(intent);
     }
 
     /**
