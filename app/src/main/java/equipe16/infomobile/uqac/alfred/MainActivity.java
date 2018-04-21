@@ -5,17 +5,24 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.ContentResolver;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.database.Cursor;
+import android.telecom.Call;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.Manifest;
+import android.content.pm.PackageManager;
+import android.app.Activity;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 import android.provider.ContactsContract;
@@ -209,10 +216,6 @@ public class MainActivity extends AppCompatActivity {
                 log("TEXT");
                 cmdText(content);
                 break;
-            case "MAIL":
-                log("MAIL");
-                cmdMail(content);
-                break;
             case "CALL":
                 log("CALL");
                 cmdCall(content);
@@ -348,21 +351,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Sends a mail to a given receiver.
-     * If the receiver is not known, tells the user.
-     * @param content argument(s) of the command
-     */
-    private void cmdMail(String content) {
-        // Traitement : envoie un mail
-    }
-
-    /**
      * Calls a given contact.
      * If the contact is not known, tells the user.
      * @param content argument(s) of the command
      */
     private void cmdCall(String content) {
-        // Traitement : passe un appel
+        Contact contact = getContact(content);
+        if (contact.getDisplayName() == null){
+            Toast.makeText(getApplicationContext(), "Contact not found", Toast.LENGTH_LONG).show();
+        }
+        else{
+            Intent callIntent = new Intent(Intent.ACTION_CALL);
+            callIntent.setData(Uri.parse("tel:"+contact.getNumero()));
+            startActivity(callIntent);
+            Toast.makeText(getApplicationContext(), "SMS envoyé.", Toast.LENGTH_LONG).show();
+        }
+
     }
 
     /**
@@ -459,7 +463,19 @@ public class MainActivity extends AppCompatActivity {
                 return contact;
             }
         }
-        return new Contact(null,null,null);
+        return new Contact(null,null);
+    }
+
+    public void getContactList(){
+        Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+        while (phones.moveToNext()) {
+            String displayName = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+            String phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
+            //log(displayName + " ----- " + phoneNumber);
+            contactList.add(new Contact(displayName, phoneNumber));
+        }
+        phones.close();
     }
 
     /**
@@ -514,21 +530,5 @@ public class MainActivity extends AppCompatActivity {
                         MY_PERMISSIONS_REQUEST_READ_CONTACTS);
             }
         }
-    }
-
-    /**
-     * Return the Contact lists stored in the phone.
-     */
-    public void getContactList(){
-        Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
-
-        while (phones.moveToNext()) {
-            String displayName = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-            String phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-            String mail = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS));
-            contactList.add(new Contact(displayName, phoneNumber, mail));
-        }
-
-        phones.close();
     }
 }
