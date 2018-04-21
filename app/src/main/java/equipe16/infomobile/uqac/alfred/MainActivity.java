@@ -42,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import static java.lang.Math.pow;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
@@ -442,8 +444,34 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdMath(String content) {
-        String[] arr;
-        // Traitement : effectue une opération mathématique
+        String[] arr = content.split(";");
+        double operand_1 = Double.parseDouble(arr[0]);
+        double operand_2 = Double.parseDouble(arr[2]);
+        String operator = arr[1];
+        switch(operator){
+            case "plus" :
+                executeReply((operand_1+operand_2)+"");
+                break;
+            case "moins" :
+                executeReply((operand_1-operand_2)+"");
+                break;
+            case "fois" :
+                executeReply((operand_1*operand_2)+"");
+                break;
+            case "multiplié par" :
+                executeReply((operand_1*operand_2)+"");
+                break;
+            case "divisé par" :
+                executeReply((operand_1/operand_2)+"");
+                break;
+            case "modulo" :
+                executeReply((operand_1%operand_2)+"");
+                break;
+            case "puissance" :
+                executeReply(pow(operand_1,operand_2)+"");
+                break;
+        }
+
     }
 
     // ------
