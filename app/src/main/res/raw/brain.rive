@@ -105,8 +105,13 @@
 
 // Command:DATE
 //   Renvoie la date actuelle
-+ (quelle est la date|quel jour sommes nous)
++ (quelle est la date|quel jour sommes nous|on est le combien)
 - CMD;DATE
+
+// Command TIME
+//   Renvoie l'heure actuelle
++ (quelle heure est il|il est quelle heure)
+- CMD;TIME
 
 // Command:WEATHER
 //   Renvoie la météo à un certain endroit

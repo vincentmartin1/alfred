@@ -5,23 +5,17 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.ContentResolver;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.database.Cursor;
-import android.telecom.Call;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.Manifest;
-import android.content.pm.PackageManager;
-import android.app.Activity;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 import android.provider.ContactsContract;
@@ -32,10 +26,14 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,12 +41,15 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS =1 ;
     private static final int MY_PERMISSIONS_REQUEST_CALL_PHONE =2 ;
 
-
     RiveScript bot;
     EditText editText;
     TextView answer;
 
-    ArrayList<Contact> contactListe = new ArrayList<>();
+    ArrayList<Contact> contactList = new ArrayList<>();
+
+    // ------
+    // UTIL FUNCTIONS
+    // ------
 
     /**
      * Logs the string cast of an object.
@@ -96,7 +97,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Récupération du contenu
-        return sb.substring(0, sb.length() - 1) + "";
+        if (sb.length() > 0)
+            return sb.substring(0, sb.length() - 1) + "";
+        else
+            return "";
     }
 
     /**
@@ -113,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
         bot = new RiveScript();
         // bot.setHandler("javascript", new JavaScriptHandler());
 
+
         InputStream inputStream = getResources().openRawResource(R.raw.brain);
         String script = "";
 
@@ -122,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
             log(e.getMessage());
         }
 
-        //Log.i("ALF", "Loaded script : \n" + script);
         bot.stream(script);
 
         bot.sortReplies();
@@ -166,6 +170,10 @@ public class MainActivity extends AppCompatActivity {
                 executeCommand(content);
         }
     }
+
+    // ------
+    // PREFIX HANDLING
+    // ------
 
     /**
      * Executes a reply, i.e. if the prefix of the bot's
@@ -215,8 +223,11 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case "DATE":
                 log("DATE");
-                cmdDate(content);
+                cmdDate();
                 break;
+            case "TIME":
+                log("TIME");
+                cmdTime();
             case "WEATHER":
                 log("WEATHER");
                 cmdWeather(content);
@@ -239,6 +250,10 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+
+    // ------
+    // COMMANDS
+    // ------
 
     /**
      * Opens the given application.
@@ -364,10 +379,26 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Tells the current date to the user.
-     * @param content argument(s) of the command
      */
-    private void cmdDate(String content) {
+    private void cmdDate() {
         // Traitement : donne la date
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.CANADA_FRENCH);
+
+        Date date = new Date();
+
+        executeReply("Il est " + dateFormat.format(date) + ".");
+    }
+
+    /**
+     * Tells the current time to the user.
+     */
+    private void cmdTime() {
+        // Traitement : donne l'heure
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.CANADA_FRENCH);
+
+        Date date = new Date();
+
+        executeReply("Il est " + dateFormat.format(date) + ".");
     }
 
     /**
@@ -411,10 +442,19 @@ public class MainActivity extends AppCompatActivity {
         // Traitement : effectue une opération mathématique
     }
 
+    // ------
+    // PERMISSIONS
+    // ------
 
-
+    /**
+     * Return an existing contact from its name if it exists,
+     * or returns a new null Contact.
+     * @param name name of the contact
+     * @return found contact or null Contact
+     */
     private Contact getContact(String name){
-        for(Contact contact : contactListe){
+        for(Contact contact:
+                contactList){
             if(contact.getDisplayName().equals(name)){
                 return contact;
             }
@@ -422,45 +462,53 @@ public class MainActivity extends AppCompatActivity {
         return new Contact(null,null,null);
     }
 
-    private void executePermission(){
+    /**
+     * Asks all the permissions needed to the user.
+     */
+    private void executePermission() {
         permission_CALL_PHONE();
         permission_READ_CONTACTS();
         permission_SEND_SMS();
     }
 
+    /**
+     * Asks the user the permission to send SMS.
+     */
     protected void permission_SEND_SMS() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.SEND_SMS)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.SEND_SMS)) {
-            } else {
+            if (!(ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.SEND_SMS))) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.SEND_SMS},
                         MY_PERMISSIONS_REQUEST_SEND_SMS);
             }
         }
     }
+
+    /**
+     * Asks the user the permission to manage phone calls.
+     */
     protected void permission_CALL_PHONE() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.CALL_PHONE)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
                 != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.CALL_PHONE)) {
-            } else {
+            if (!(ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.CALL_PHONE))) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.CALL_PHONE},
                         MY_PERMISSIONS_REQUEST_CALL_PHONE);
             }
         }
     }
+
+    /**
+     * Asks the user the permission to read the phone contacts.
+     */
     protected void permission_READ_CONTACTS() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.READ_CONTACTS)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.READ_CONTACTS)) {
-            } else {
+            if (!(ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_CONTACTS))) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.READ_CONTACTS},
                         MY_PERMISSIONS_REQUEST_READ_CONTACTS);
@@ -468,14 +516,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Return the Contact lists stored in the phone.
+     */
     public void getContactList(){
         Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+
         while (phones.moveToNext()) {
             String displayName = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
             String phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
             String mail = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS));
-            contactListe.add(new Contact(displayName, phoneNumber, mail));
+            contactList.add(new Contact(displayName, phoneNumber, mail));
         }
+
         phones.close();
     }
 }
