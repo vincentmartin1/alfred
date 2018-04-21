@@ -5,13 +5,26 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.ContentResolver;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.database.Cursor;
+import android.telecom.Call;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.app.Activity;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
+import android.telephony.SmsManager;
+import android.widget.Toast;
+import android.provider.ContactsContract;
 
 import com.rivescript.RiveScript;
 
@@ -26,9 +39,16 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
+    private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS =1 ;
+    private static final int MY_PERMISSIONS_REQUEST_CALL_PHONE =2 ;
+
+
     RiveScript bot;
     EditText editText;
     TextView answer;
+
+    ArrayList<Contact> contactListe = new ArrayList<>();
 
     /**
      * Logs the string cast of an object.
@@ -109,6 +129,15 @@ public class MainActivity extends AppCompatActivity {
 
         editText = findViewById(R.id.question);
         answer = findViewById(R.id.answer);
+
+        executePermission();
+        getContactList();
+    }
+
+    protected void onPause() {
+        // TODO Auto-generated method stub
+        super.onPause();
+        finish();
     }
 
     /**
@@ -287,6 +316,20 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdText(String content) {
+        String message;
+        String phoneNo;
+        String[] arr = content.split(";");
+        Contact contact = getContact(arr[0]);
+        if (contact.getDisplayName() == null){
+            Toast.makeText(getApplicationContext(), "Contact not found", Toast.LENGTH_LONG).show();
+        }
+        else{
+            message = arr[1];
+            phoneNo = contact.getNumero();
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(phoneNo, null, message, null, null);
+            Toast.makeText(getApplicationContext(), "SMS envoyé.", Toast.LENGTH_LONG).show();
+        }
     }
 
     /**
@@ -366,5 +409,73 @@ public class MainActivity extends AppCompatActivity {
     private void cmdMath(String content) {
         String[] arr;
         // Traitement : effectue une opération mathématique
+    }
+
+
+
+    private Contact getContact(String name){
+        for(Contact contact : contactListe){
+            if(contact.getDisplayName().equals(name)){
+                return contact;
+            }
+        }
+        return new Contact(null,null,null);
+    }
+
+    private void executePermission(){
+        permission_CALL_PHONE();
+        permission_READ_CONTACTS();
+        permission_SEND_SMS();
+    }
+
+    protected void permission_SEND_SMS() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.SEND_SMS)) {
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.SEND_SMS},
+                        MY_PERMISSIONS_REQUEST_SEND_SMS);
+            }
+        }
+    }
+    protected void permission_CALL_PHONE() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.CALL_PHONE)) {
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.CALL_PHONE},
+                        MY_PERMISSIONS_REQUEST_CALL_PHONE);
+            }
+        }
+    }
+    protected void permission_READ_CONTACTS() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_CONTACTS)) {
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_CONTACTS},
+                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+            }
+        }
+    }
+
+    public void getContactList(){
+        Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+        while (phones.moveToNext()) {
+            String displayName = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+            String phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+            String mail = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS));
+            contactListe.add(new Contact(displayName, phoneNumber, mail));
+        }
+        phones.close();
     }
 }
