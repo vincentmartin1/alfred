@@ -7,6 +7,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.ContentResolver;
 import android.net.Uri;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.database.Cursor;
@@ -29,6 +31,13 @@ import android.provider.ContactsContract;
 
 import com.rivescript.RiveScript;
 
+import net.gotev.speech.GoogleVoiceTypingDisabledException;
+import net.gotev.speech.Logger;
+import net.gotev.speech.Speech;
+import net.gotev.speech.SpeechDelegate;
+import net.gotev.speech.SpeechRecognitionNotAvailable;
+import net.gotev.speech.ui.SpeechProgressView;
+
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -49,12 +58,17 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
     private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS =1 ;
     private static final int MY_PERMISSIONS_REQUEST_CALL_PHONE =2 ;
+    private static final int MY_PERMISSIONS_REQUEST_USE_MICROPHONE = 3;
 
     RiveScript bot;
     EditText editText;
     TextView answer;
+    TextView txtSpeechInput;
+    SpeechProgressView speechProgressView;
 
     ArrayList<Contact> contactList = new ArrayList<>();
+
+    TextToSpeech t1;
 
     // ------
     // UTIL FUNCTIONS
@@ -140,11 +154,34 @@ public class MainActivity extends AppCompatActivity {
 
         bot.sortReplies();
 
+        //txtSpeechInput = findViewById(R.id.txtSpeechInput);
+        speechProgressView = findViewById(R.id.progress);
         editText = findViewById(R.id.question);
         answer = findViewById(R.id.answer);
 
+        t1=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    t1.setLanguage(Locale.FRENCH);
+                }
+            }
+        });
+
+        Speech.init(this, getPackageName());
+
         executePermission();
         getContactList();
+
+
+        int[] colors = {
+                ContextCompat.getColor(this, R.color.alf_blue),
+                ContextCompat.getColor(this, R.color.alf_blue),
+                ContextCompat.getColor(this, R.color.alf_darkgreen),
+                ContextCompat.getColor(this, R.color.alf_red),
+                ContextCompat.getColor(this, R.color.alf_red)
+        };
+        speechProgressView.setColors(colors);
     }
 
     protected void onPause() {
@@ -153,12 +190,19 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
+    protected void onDestroy() {
+        super.onDestroy();
+        Speech.getInstance().shutdown();
+    }
+
     /**
      * Triggered when @submit button is pressed.
      * @param view Button
      */
     public void submit(View view) {
         editText.onEditorAction(EditorInfo.IME_ACTION_DONE);
+
+        promptSpeechInput();
 
         String question = editText.getText().toString();
         String prefix;
@@ -180,6 +224,48 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void promptSpeechInput() {
+        try {
+            // you must have android.permission.RECORD_AUDIO granted at this point
+            Speech.getInstance().startListening(speechProgressView, new SpeechDelegate() {
+                @Override
+                public void onStartOfSpeech() {
+                    log("speech recognition is now active");
+                }
+
+                @Override
+                public void onSpeechRmsChanged(float value) {
+                    log("rms is now: " + value);
+                }
+
+                @Override
+                public void onSpeechPartialResults(List<String> results) {
+                    StringBuilder str = new StringBuilder();
+                    for (String res : results) {
+                        str.append(res).append(" ");
+                    }
+
+                    log("partial result: " + str.toString().trim());
+                }
+
+                @Override
+                public void onSpeechResult(String result) {
+                    log("result: " + result);
+                }
+            });
+        } catch (SpeechRecognitionNotAvailable exc) {
+            log("Speech recognition is not available on this device!");
+            // You can prompt the user if he wants to install Google App to have
+            // speech recognition, and then you can simply call:
+            //
+            // SpeechUtil.redirectUserToGoogleAppOnPlayStore(this);
+            //
+            // to redirect the user to the Google App page on Play Store
+        } catch (GoogleVoiceTypingDisabledException exc) {
+            log("Google voice typing must be enabled!");
+        }
+    }
+
     // ------
     // PREFIX HANDLING
     // ------
@@ -192,6 +278,7 @@ public class MainActivity extends AppCompatActivity {
     public void executeReply(String content) {
         log("TYPE: REPLY");
         answer.setText(content);
+        t1.speak(content, TextToSpeech.QUEUE_FLUSH, null);
     }
 
     /**
@@ -202,6 +289,7 @@ public class MainActivity extends AppCompatActivity {
     public void executeCommand(String content) {
         log("TYPE: COMMAND");
         answer.setText("Executing command..");
+        t1.speak("Exécution de la commande", TextToSpeech.QUEUE_FLUSH, null);
 
         String command = prefix(content);
         content = content(content);
@@ -513,6 +601,7 @@ public class MainActivity extends AppCompatActivity {
         permission_CALL_PHONE();
         permission_READ_CONTACTS();
         permission_SEND_SMS();
+        //permission_USE_MICROPHONE();
     }
 
     /**
@@ -556,6 +645,18 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.READ_CONTACTS},
                         MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+            }
+        }
+    }
+
+    protected void permission_USE_MICROPHONE() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission_group.MICROPHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (!(ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission_group.MICROPHONE))) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission_group.MICROPHONE},
+                        MY_PERMISSIONS_REQUEST_USE_MICROPHONE);
             }
         }
     }
