@@ -82,8 +82,8 @@
 
 // Command:TEXT
 //   Envoie un SMS
-+ envoie * à * par sms
-- CMD;TEXT;<star2>;<star1>
++ envoie un message à * qui dit que *
+- CMD;TEXT;<star1>;<star2>
 
 // Command:MAIL
 //   Envoie un mail

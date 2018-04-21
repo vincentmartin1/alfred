@@ -70,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
 
     TextToSpeech t1;
 
+    String request_question;
+    private boolean processing = false;
+
     // ------
     // UTIL FUNCTIONS
     // ------
@@ -201,26 +204,29 @@ public class MainActivity extends AppCompatActivity {
      */
     public void submit(View view) {
         editText.onEditorAction(EditorInfo.IME_ACTION_DONE);
-
-        promptSpeechInput();
-
-        String question = editText.getText().toString();
-        String prefix;
-        String content;
-        if (question.length() == 0)
-            answer.setText("Question vide !");
+        if(!processing){
+            promptSpeechInput();
+        }
         else {
-            // Récupération de la réponse du bot
-            String reply = bot.reply("user", question);
+            String question = request_question;//editText.getText().toString();
+            String prefix;
+            String content;
+            if (question.length() == 0)
+                answer.setText("Question vide !");
+            else {
+                // Récupération de la réponse du bot
+                String reply = bot.reply("user", question);
 
-            prefix = prefix(reply);
-            content = content(reply);
+                prefix = prefix(reply);
+                content = content(reply);
 
-            // Test du type de la réponse et exécution
-            if (prefix.equals("REP"))
-                executeReply(content);
-            else if (prefix.equals("CMD"))
-                executeCommand(content);
+                // Test du type de la réponse et exécution
+                if (prefix.equals("REP"))
+                    executeReply(content);
+                else if (prefix.equals("CMD"))
+                    executeCommand(content);
+                processing = false;
+            }
         }
     }
 
@@ -250,7 +256,10 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onSpeechResult(String result) {
+                    processing = true;
                     log("result: " + result);
+                    request_question = result;
+                    submit(editText);
                 }
             });
         } catch (SpeechRecognitionNotAvailable exc) {
@@ -446,7 +455,9 @@ public class MainActivity extends AppCompatActivity {
      * @param content argument(s) of the command
      */
     private void cmdCall(String content) {
+        log("ntml");
         Contact contact = getContact(content);
+        log(contact.getDisplayName());
         if (contact.getDisplayName() == null){
             Toast.makeText(getApplicationContext(), "Contact not found", Toast.LENGTH_LONG).show();
         }
@@ -454,7 +465,7 @@ public class MainActivity extends AppCompatActivity {
             Intent callIntent = new Intent(Intent.ACTION_CALL);
             callIntent.setData(Uri.parse("tel:"+contact.getNumero()));
             startActivity(callIntent);
-            Toast.makeText(getApplicationContext(), "SMS envoyé.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "Appel lancé.", Toast.LENGTH_LONG).show();
         }
 
     }
@@ -537,19 +548,16 @@ public class MainActivity extends AppCompatActivity {
         double operand_2 = Double.parseDouble(arr[2]);
         String operator = arr[1];
         switch(operator){
-            case "plus" :
+            case "+" :
                 executeReply((operand_1+operand_2)+"");
                 break;
-            case "moins" :
+            case "-" :
                 executeReply((operand_1-operand_2)+"");
                 break;
-            case "fois" :
+            case "x" :
                 executeReply((operand_1*operand_2)+"");
                 break;
-            case "multiplié par" :
-                executeReply((operand_1*operand_2)+"");
-                break;
-            case "divisé par" :
+            case "/" :
                 executeReply((operand_1/operand_2)+"");
                 break;
             case "modulo" :
@@ -575,7 +583,8 @@ public class MainActivity extends AppCompatActivity {
     private Contact getContact(String name){
         for(Contact contact:
                 contactList){
-            if(contact.getDisplayName().equals(name)){
+            log(contact.getDisplayName());
+            if(contact.getDisplayName().toLowerCase().equals(name.toLowerCase())){
                 return contact;
             }
         }
@@ -601,7 +610,7 @@ public class MainActivity extends AppCompatActivity {
         permission_CALL_PHONE();
         permission_READ_CONTACTS();
         permission_SEND_SMS();
-        //permission_USE_MICROPHONE();
+        permission_USE_MICROPHONE();
     }
 
     /**
@@ -650,12 +659,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void permission_USE_MICROPHONE() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission_group.MICROPHONE)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             if (!(ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission_group.MICROPHONE))) {
+                    Manifest.permission.RECORD_AUDIO))) {
                 ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission_group.MICROPHONE},
+                        new String[]{Manifest.permission.RECORD_AUDIO},
                         MY_PERMISSIONS_REQUEST_USE_MICROPHONE);
             }
         }
